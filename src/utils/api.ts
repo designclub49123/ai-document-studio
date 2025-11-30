@@ -12,9 +12,10 @@ const api = axios.create({
   },
 });
 
+import { askAI, generateDocument, rewriteText, generateSection } from '@/config/ai';
+
 /**
- * AI-related API calls
- * All functions are placeholders for future backend integration
+ * AI-related API calls using OpenRouter
  */
 export const AI = {
   /**
@@ -23,10 +24,11 @@ export const AI = {
    * @returns AI response text
    */
   async ask(prompt: string): Promise<string> {
-    // Placeholder - simulate API call
     console.log('[AI.ask] Prompt:', prompt);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    return `This is a placeholder AI response for: "${prompt}". Connect to a real AI backend for intelligent responses.`;
+    return askAI([
+      { role: 'system', content: 'You are a helpful AI assistant for document editing. Be concise and helpful.' },
+      { role: 'user', content: prompt },
+    ]);
   },
 
   /**
@@ -39,8 +41,7 @@ export const AI = {
     data: Record<string, string>;
   }): Promise<string> {
     console.log('[AI.generateDocument] Payload:', payload);
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    return `# Generated ${payload.type}\n\nThis is placeholder content for the ${payload.type} generator. In production, this will create a fully formatted document based on your inputs.`;
+    return generateDocument(payload);
   },
 
   /**
@@ -54,8 +55,7 @@ export const AI = {
     action?: 'condense' | 'expand' | 'summarize' | 'fix-grammar';
   }): Promise<string> {
     console.log('[AI.rewrite] Payload:', payload);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    return `[Rewritten with ${payload.tone || payload.action}]: ${payload.text}`;
+    return rewriteText(payload);
   },
 
   /**
@@ -66,8 +66,7 @@ export const AI = {
    */
   async generateSection(context: string, instruction: string): Promise<string> {
     console.log('[AI.generateSection]', { context, instruction });
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    return `## New Section\n\nThis is a placeholder for AI-generated content based on your instruction: "${instruction}".`;
+    return generateSection(context, instruction);
   },
 };
 

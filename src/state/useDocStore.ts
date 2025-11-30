@@ -17,6 +17,7 @@ interface DocState {
   
   setCurrentDocument: (doc: Document | null) => void;
   updateDocumentTitle: (title: string) => void;
+  updateDocument: (updates: Partial<Document>) => void;
   createNewDocument: () => void;
   saveDocument: () => Promise<void>;
   loadDocument: (id: string) => Promise<void>;
@@ -64,6 +65,16 @@ export const useDocStore = create<DocState>((set, get) => ({
     if (current) {
       set({
         currentDocument: { ...current, title, updatedAt: new Date() },
+        saveStatus: 'unsaved',
+      });
+    }
+  },
+
+  updateDocument: (updates) => {
+    const current = get().currentDocument;
+    if (current) {
+      set({
+        currentDocument: { ...current, ...updates, updatedAt: new Date() },
         saveStatus: 'unsaved',
       });
     }
