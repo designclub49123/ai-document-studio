@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,15 +17,28 @@ const passwordSchema = z.string().min(8, 'Password must be at least 8 characters
 
 export default function AuthPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading, signIn, signUp, signInWithGoogle, signInWithGithub } = useAuth();
   
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  // Support ?mode=signup query parameter
+  const initialTab = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>(initialTab);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [signupForm, setSignupForm] = useState({ email: '', password: '', confirmPassword: '', fullName: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Update tab when URL changes
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    if (mode === 'signup') {
+      setActiveTab('signup');
+    } else if (!mode || mode === 'login') {
+      setActiveTab('login');
+    }
+  }, [searchParams]);
 
   // Redirect if already authenticated
   useEffect(() => {
