@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,13 +11,18 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import {
   Plus, Search, FileText, Clock, Star, MoreVertical, Trash2, Edit, Pencil,
   Copy, FolderOpen, Grid3X3, List, SortAsc, Filter, Loader2,
   Settings, LogOut, User, ChevronDown, Sparkles, LayoutTemplate,
-  TrendingUp, Zap, Bell
+  TrendingUp, Zap, Bell, ArrowRight, Calendar, BarChart3, Eye,
+  Download, Share2, Archive, History, CheckCircle, AlertCircle, Moon, Sun
 } from 'lucide-react';
+import { useUserStore } from '@/state/useUserStore';
+import { cn } from '@/lib/utils';
 
 interface Document {
   id: string;
@@ -328,8 +333,8 @@ export default function Dashboard() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                  <Star className="h-5 w-5 text-yellow-500" />
+                <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
+                  <Star className="h-5 w-5 text-accent-foreground" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{documents.filter(d => d.is_favorite).length}</p>
@@ -341,8 +346,8 @@ export default function Dashboard() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-green-500" />
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{documents.reduce((acc, d) => acc + d.word_count, 0).toLocaleString()}</p>
@@ -354,8 +359,8 @@ export default function Dashboard() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                  <Zap className="h-5 w-5 text-purple-500" />
+                <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-secondary-foreground" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold capitalize">{profile?.subscription_tier || 'Free'}</p>
@@ -524,7 +529,7 @@ export default function Dashboard() {
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleFavorite(doc.id, doc.is_favorite); }}>
-                          <Star className={`h-4 w-4 mr-2 ${doc.is_favorite ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                          <Star className={cn("h-4 w-4 mr-2", doc.is_favorite && "fill-primary text-primary")} />
                           {doc.is_favorite ? 'Unfavorite' : 'Favorite'}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openRenameDialog(doc); }}>
@@ -551,7 +556,7 @@ export default function Dashboard() {
                       {doc.word_count} words
                     </Badge>
                     {doc.is_favorite && (
-                      <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                      <Star className="h-3 w-3 fill-primary text-primary" />
                     )}
                   </div>
                 </CardContent>

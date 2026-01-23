@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useDocStore } from '@/state/useDocStore';
 import { useUserStore } from '@/state/useUserStore';
 import { useEditorStore } from '@/state/useEditorStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,12 +43,16 @@ import {
   Monitor,
   Users,
   CreditCard,
+  History,
+  FileDown,
 } from 'lucide-react';
 import { APP_NAME } from '@/constants';
 import { Palette } from 'lucide-react';
 import ThemeSelector from '@/components/ThemeSelector';
 import { AIToolsDropdown } from '@/components/AIToolsDropdown';
 import { NotificationsDropdown } from '@/components/NotificationsDropdown';
+import VersionHistory from '@/components/VersionHistory';
+import AdvancedExportDialog from '@/components/AdvancedExportDialog';
 import { toast } from 'sonner';
 import { exportToDOCX, exportToTXT } from '@/utils/exportDocument';
 import { cn } from '@/lib/utils';
@@ -58,14 +63,17 @@ import SecurityMiddleware from '@/security/SecurityMiddleware';
 
 export function Topbar() {
   const navigate = useNavigate();
+  const { id: documentId } = useParams();
   const { currentDocument, saveStatus, updateDocumentTitle, saveDocument, autoSave, createNewDocument } = useDocStore();
   const { user, theme, colorTheme, toggleTheme, setColorTheme, logout } = useUserStore();
-  const { contentRef } = useEditorStore();
+  const { contentRef, editor } = useEditorStore();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(currentDocument?.title || 'Untitled Document');
   const [isExporting, setIsExporting] = useState(false);
   const [showSaveError, setShowSaveError] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showAdvancedExport, setShowAdvancedExport] = useState(false);
 
   // Initialize security services
   useEffect(() => {
@@ -207,16 +215,12 @@ export function Topbar() {
   };
 
   return (
-    <header className={`h-16 border-b flex items-center justify-between px-6 gap-4 relative z-50 transition-colors duration-200 ${
-      theme === 'dark' 
-        ? 'border-gray-800 bg-[#000000]' 
-        : 'border-gray-200 bg-white'
-    }`}>
+    <header className="h-16 border-b border-border flex items-center justify-between px-6 gap-4 relative z-50 transition-colors duration-200 bg-background">
       {/* Logo & Document Section */}
       <div className="flex items-center gap-4 min-w-0 flex-1 relative">
         {/* Logo Only */}
         <div className="flex items-center shrink-0">
-          <div className="h-12 w- rounded-lg overflow-hidden">
+          <div className="h-12 rounded-lg overflow-hidden">
             <img 
               src={theme === 'dark' ? logo : logo1} 
               alt="PaperMorph Logo" 
@@ -225,9 +229,7 @@ export function Topbar() {
           </div>
         </div>
 
-        <div className={`h-6 w-px hidden lg:block ${
-          theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'
-        }`} />
+        <div className="h-6 w-px hidden lg:block bg-border" />
 
         {/* Document Name & Status */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -241,17 +243,13 @@ export function Topbar() {
                 onBlur={handleTitleBlur}
                 onKeyDown={handleTitleKeyDown}
                 autoFocus
-                className={`bg-transparent border-none outline-none font-semibold text-sm w-full min-w-0 ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}
+                className="bg-transparent border-none outline-none font-semibold text-sm w-full min-w-0 text-foreground"
                 placeholder="Enter document name..."
               />
             ) : (
               <span
                 onClick={handleTitleClick}
-                className={`font-semibold text-sm cursor-pointer truncate ${
-                  theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}
+                className="font-semibold text-sm cursor-pointer truncate text-foreground"
                 title="Click to edit document name"
               >
                 {titleValue || 'Untitled Document'}
@@ -268,7 +266,7 @@ export function Topbar() {
                 onClick={handleRetrySave}
                 disabled={isRetrying}
                 title="Retry save"
-                className="hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 rounded p-0.5"
+                className="hover:bg-destructive/10 hover:text-destructive rounded p-0.5"
               >
                 <RefreshCw className={`h-2 w-2 ${isRetrying ? 'animate-spin' : ''}`} />
               </button>
@@ -297,23 +295,35 @@ export function Topbar() {
           </span>
         </Button>
 
-        <div className={`h-4 w-px ${
-          theme === 'dark' ? 'bg-gray-700' : 'bg-gray-300'
-        }`} />
+        <div className="h-4 w-px bg-border" />
 
         {/* Export & Tools */}
         <div className="flex items-center gap-1">
+          {/* Version History Button */}
+          {documentId && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2.5 gap-2"
+                  onClick={() => setShowVersionHistory(true)}
+                >
+                  <History className="h-3 w-3" />
+                  <span className="hidden lg:block text-sm">History</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>View version history</TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Export Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`gap-2 h-8 px-3 transition-colors ${
-                  theme === 'dark' 
-                    ? 'hover:bg-gray-800 text-white' 
-                    : 'hover:bg-gray-100 text-gray-900'
-                }`}
+                className="gap-2 h-8 px-3 transition-colors hover:bg-accent"
                 disabled={isExporting}
               >
                 {isExporting ? (
@@ -330,17 +340,25 @@ export function Topbar() {
                 <div className="text-xs font-medium text-muted-foreground mb-1">Export Format</div>
               </div>
               <DropdownMenuItem onClick={() => handleExport('docx')} className="gap-3">
-                <Presentation className="h-4 w-4 text-blue-500" />
+                <Presentation className="h-4 w-4 text-primary" />
                 <div className="flex-1">
                   <div className="font-medium">Word Document</div>
                   <div className="text-xs text-muted-foreground">Editable format</div>
                 </div>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport('txt')} className="gap-3">
-                <FileText className="h-4 w-4 text-gray-500" />
+                <FileText className="h-4 w-4 text-muted-foreground" />
                 <div className="flex-1">
                   <div className="font-medium">Plain Text</div>
                   <div className="text-xs text-muted-foreground">Simple format</div>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowAdvancedExport(true)} className="gap-3">
+                <FileDown className="h-4 w-4 text-primary" />
+                <div className="flex-1">
+                  <div className="font-medium">Advanced Export</div>
+                  <div className="text-xs text-muted-foreground">Headers, watermarks, more</div>
                 </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -352,11 +370,7 @@ export function Topbar() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`gap-2 h-8 px-2.5 transition-colors ${
-                  theme === 'dark' 
-                    ? 'hover:bg-gray-800 text-white' 
-                    : 'hover:bg-gray-100 text-gray-900'
-                }`}
+                className="gap-2 h-8 px-2.5 transition-colors hover:bg-accent"
                 title="Select theme"
               >
                 <Palette className="h-3 w-3" />
@@ -366,53 +380,53 @@ export function Topbar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => setColorTheme('orange')} className="gap-3">
-                <div className="h-4 w-4 bg-orange-500 rounded-full" />
+                <div className="h-4 w-4 bg-primary rounded-full" style={{ backgroundColor: 'hsl(15 90% 55%)' }} />
                 <div className="flex-1">
                   <div className="font-medium">Orange Theme</div>
                   <div className="text-xs text-muted-foreground">Warm and energetic</div>
                 </div>
-                {colorTheme === 'orange' && <Check className="h-4 w-4 text-green-500" />}
+                {colorTheme === 'orange' && <Check className="h-4 w-4 text-primary" />}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setColorTheme('blue')} className="gap-3">
-                <div className="h-4 w-4 bg-blue-500 rounded-full" />
+                <div className="h-4 w-4 rounded-full" style={{ backgroundColor: 'hsl(212 100% 50%)' }} />
                 <div className="flex-1">
                   <div className="font-medium">Blue Theme</div>
                   <div className="text-xs text-muted-foreground">Cool and professional</div>
                 </div>
-                {colorTheme === 'blue' && <Check className="h-4 w-4 text-green-500" />}
+                {colorTheme === 'blue' && <Check className="h-4 w-4 text-primary" />}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setColorTheme('green')} className="gap-3">
-                <div className="h-4 w-4 bg-green-500 rounded-full" />
+                <div className="h-4 w-4 rounded-full" style={{ backgroundColor: 'hsl(142 76% 36%)' }} />
                 <div className="flex-1">
                   <div className="font-medium">Green Theme</div>
                   <div className="text-xs text-muted-foreground">Fresh and natural</div>
                 </div>
-                {colorTheme === 'green' && <Check className="h-4 w-4 text-green-500" />}
+                {colorTheme === 'green' && <Check className="h-4 w-4 text-primary" />}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setColorTheme('red')} className="gap-3">
-                <div className="h-4 w-4 bg-red-500 rounded-full" />
+                <div className="h-4 w-4 rounded-full" style={{ backgroundColor: 'hsl(0 72% 51%)' }} />
                 <div className="flex-1">
                   <div className="font-medium">Red Theme</div>
                   <div className="text-xs text-muted-foreground">Bold and passionate</div>
                 </div>
-                {colorTheme === 'red' && <Check className="h-4 w-4 text-green-500" />}
+                {colorTheme === 'red' && <Check className="h-4 w-4 text-primary" />}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => toggleTheme()} className="gap-3">
-                <Moon className="h-4 w-4 text-gray-800" />
+                <Moon className="h-4 w-4 text-muted-foreground" />
                 <div className="flex-1">
                   <div className="font-medium">Dark Theme</div>
                   <div className="text-xs text-muted-foreground">Classic dark mode</div>
                 </div>
-                {theme === 'dark' && <Check className="h-4 w-4 text-green-500" />}
+                {theme === 'dark' && <Check className="h-4 w-4 text-primary" />}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => toggleTheme()} className="gap-3">
-                <Sun className="h-4 w-4 text-yellow-500" />
+                <Sun className="h-4 w-4 text-primary" />
                 <div className="flex-1">
                   <div className="font-medium">Light Theme</div>
                   <div className="text-xs text-muted-foreground">Clean and bright</div>
                 </div>
-                {theme === 'light' && <Check className="h-4 w-4 text-green-500" />}
+                {theme === 'light' && <Check className="h-4 w-4 text-primary" />}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -460,7 +474,7 @@ export function Topbar() {
                 <div className="hidden lg:block text-left">
                   <div className="text-xs font-medium">{user?.name || 'User'}</div>
                   <div className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Crown className="h-2.5 w-2.5 text-yellow-500" />
+                    <Crown className="h-2.5 w-2.5 text-primary" />
                     Premium Plan
                   </div>
                 </div>
@@ -477,7 +491,7 @@ export function Topbar() {
                     <div className="font-medium text-sm">{user?.name || 'User'}</div>
                     <div className="text-xs text-muted-foreground">{user?.email || 'user@example.com'}</div>
                     <Badge variant="secondary" className="mt-1 text-xs">
-                      <Crown className="h-2.5 w-2.5 mr-1 text-yellow-500" />
+                      <Crown className="h-2.5 w-2.5 mr-1 text-primary" />
                       Premium
                     </Badge>
                   </div>
@@ -558,7 +572,7 @@ export function Topbar() {
               
               <DropdownMenuSeparator />
               
-              <DropdownMenuItem onClick={() => logout()} className="gap-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20">
+              <DropdownMenuItem onClick={() => logout()} className="gap-3 text-destructive hover:bg-destructive/10">
                 <LogOut className="h-3 w-3" />
                 <div className="flex-1">
                   <div className="font-medium text-sm">Sign Out</div>
@@ -569,6 +583,36 @@ export function Topbar() {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Version History Dialog */}
+      {documentId && (
+        <VersionHistory
+          documentId={documentId}
+          currentContent={currentDocument?.content || ''}
+          onRestore={(content) => {
+            if (editor?.documentEditor?.editor) {
+              editor.documentEditor.selection.selectAll();
+              editor.documentEditor.editor.delete();
+              editor.documentEditor.editor.insertText(content);
+              toast.success('Version restored');
+            }
+          }}
+          isOpen={showVersionHistory}
+          onClose={() => setShowVersionHistory(false)}
+        />
+      )}
+
+      {/* Advanced Export Dialog */}
+      <AdvancedExportDialog
+        isOpen={showAdvancedExport}
+        onClose={() => setShowAdvancedExport(false)}
+        documentName={currentDocument?.title || 'Untitled Document'}
+        content={currentDocument?.content || ''}
+        onExport={(options) => {
+          // Handle other export formats
+          console.log('Export with options:', options);
+        }}
+      />
     </header>
   );
 }
