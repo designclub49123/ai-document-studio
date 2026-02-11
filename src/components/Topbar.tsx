@@ -72,11 +72,13 @@ export function Topbar() {
     return () => window.removeEventListener('documentSaveError', handleSaveError as EventListener);
   }, []);
 
-  // Auto-save setup
+  // Auto-save setup - only trigger when saveStatus changes
   useEffect(() => {
-    const cleanup = autoSave();
-    return cleanup;
-  }, [autoSave]);
+    if (saveStatus === 'unsaved') {
+      const cleanup = autoSave();
+      return cleanup || undefined;
+    }
+  }, [saveStatus]);
 
   // Sync title value with current document
   useEffect(() => {
@@ -144,7 +146,7 @@ export function Topbar() {
       case 'saving':
         return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
       case 'saved':
-        return <Check className="h-4 w-4 text-green-600 dark:text-green-400" />;
+        return <Check className="h-4 w-4 text-primary" />;
       default:
         return showSaveError
           ? <AlertTriangle className="h-4 w-4 text-destructive" />

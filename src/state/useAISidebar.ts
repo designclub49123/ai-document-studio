@@ -244,8 +244,35 @@ export const useAISidebar = create<AISidebarState>((set, get) => ({
 
   generateSection: async () => {
     set({ isGenerating: true });
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    set({ isGenerating: false });
+    try {
+      const { result, error } = await callAIEdgeFunction('chat', 'Generate a well-structured section of content for my document. Include a heading, introduction paragraph, and supporting details.');
+      if (error) throw new Error(error);
+
+      const assistantMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: result,
+        timestamp: new Date(),
+        applyContent: result,
+      };
+      set((state) => ({
+        messages: [...state.messages, assistantMessage],
+      }));
+    } catch (error) {
+      console.error('Generate section failed:', error);
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: 'Failed to generate section. Please try again.',
+        timestamp: new Date(),
+        isError: true,
+      };
+      set((state) => ({
+        messages: [...state.messages, errorMessage],
+      }));
+    } finally {
+      set({ isGenerating: false });
+    }
   },
 
   rewriteFormal: async (text: string) => {

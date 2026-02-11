@@ -131,7 +131,7 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen font-sans" style={{ backgroundColor: '#000000' }}>
+    <div className="min-h-screen font-sans bg-background">
       {/* HEADER */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-6 py-4">
@@ -377,7 +377,7 @@ const LandingPage = () => {
                   <div className="flex gap-1.5">
                     <div className="w-3 h-3 rounded-full bg-destructive"></div>
                     <div className="w-3 h-3 rounded-full bg-primary"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-primary"></div>
                   </div>
                   <span className="text-xs text-muted-foreground">My Workspace</span>
                 </div>
